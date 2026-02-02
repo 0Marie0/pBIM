@@ -31,47 +31,8 @@ function create_graph(n)
     return graph
 end
 
-function hamiltonian_path(graph, n)
-    """
-    This function find a Hamiltonian path in a given graph using backtracking;
-    Entry : 
-    graph (Dict) = a graph where a key is a given node and the value is the list of the connected nodes
-    n (int) = the amount of node on a side
-    Return : 
-    path (Vector) = a Hamiltonian path if it exists, otherwise an empty vector
-    """
-    total_nodes = n * n
-    path = Int[]
 
-    function backtrack(current_node)
-        push!(path, current_node)
-
-        if length(path) == total_nodes
-            return true
-        end
-
-        for neighbor in graph[current_node]
-            if neighbor ∉ path
-                if backtrack(neighbor)
-                    return true
-                end
-            end
-        end
-
-        pop!(path)
-        return false
-    end
-
-    for start_node in keys(graph)
-        if backtrack(start_node)
-            return path
-        end
-    end
-
-    return Int[]
-end
-
-# Example usage:
+# Usage:
 n = 3
 graph = create_graph(n)
 print(graph)
