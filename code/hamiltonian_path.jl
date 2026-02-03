@@ -1,6 +1,6 @@
-function create_graph(n)
+function create_graph2D(n)
     """
-    This function create a graph that represents the links between each node of the lattice;
+    This function create a graph that represents the links between each node of a 2D lattice;
     Entry : 
     n (int) = the amount of node on a side
     Return : 
@@ -34,5 +34,5 @@ end
 
 # Usage:
 n = 3
-graph = create_graph(n)
+graph = create_graph2D(n)
 print(graph)
