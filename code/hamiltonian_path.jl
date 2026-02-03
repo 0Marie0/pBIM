@@ -35,4 +35,3 @@ end
 # Usage:
 n = 3
 graph = create_graph2D(n)
-print(graph)
