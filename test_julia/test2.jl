@@ -852,10 +852,118 @@ using ProfileView
 using PProf
 
 #First JIT 
-algo(seq, target_number, all_ctc_maps, 10, 100)
+#algo(seq, target_number, all_ctc_maps, 10, 100)
 
 #reset profiler then real mesure
-Profile.clear()
-@profile algo(seq, target_number, all_ctc_maps, 500, 100)
+#Profile.clear()
+#@profile algo(seq, target_number, all_ctc_maps, 500, 100)
 
+#ProfileView.view()
+
+
+"""
+The main optimization problem is with the function total_energy which compute 
+103 346 structures x 28 contacts every iteration.
+The central idea of optimization is: when a single amino acid is mutated to the pos position,
+only the structures that have a pos-related contact see their energy change. 
+All the others remain the same.
+"""
+
+#pre-calculation (only one time before the algo)
+function precompute_pos_contacts(all_ctc_maps)
+    #pos_contacts[p]=list of (structure_idx, partner) for position p
+    #for each position, which structures have a contact here and with whom?
+    #pos_contacts never change
+    pos_contacts=[Vector{Tuple{Int,Int}}() for _ in 1:27]
+    for (s,ctc_map) in enumerate(all_ctc_maps)
+        for (a,b) in ctc_map
+            push!(pos_contacts[a], (s, b))
+            push!(pos_contacts[b], (s, a))
+        end
+    end
+    return pos_contacts #pos_contacts[pos 3] = [(structure 12, pos 7), etc...]
+end
+
+
+#We calculate weights[s] once for the initial sequence
+#Then, instead of recalculating everything when the sequence changes, 
+#we will only update the weights affected by the mutation. (cf. pos_contacts)
+function init_weights(all_ctc_maps, seq)
+    # weights[s] = exp(−E_s(seq)) for every structure s
+    return [exp(-energy_one_struct(ctc_map, seq)) for ctc_map in all_ctc_maps]
+end
+
+
+#metropolis function
+function metropolis(mut, seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, beta=1000)
+    pos,new_aa=mut
+    old_aa=seq[pos]
+
+    #only structures with contact in `pos` change 
+    affected = Dict{Int, Float64}() #indices, delta
+    for (s,j) in pos_contacts[pos]
+        affected[s] = get(affected, s, 0.0) + MJ[new_aa, seq[j]] - MJ[old_aa, seq[j]] #sum of delta(s)
+    end
+
+    #updating ttl_energy without recalculating everything
+    new_ttl_energy=ttl_energy
+    for (s, delta) in affected #we iterate only on the affected structures (else delta==0, useless)
+        new_ttl_energy+= weights[s]*exp(-delta) - weights[s]
+    end
+
+    #equivalent to probability_target_structure
+    dE_target = get(affected, target_number, 0.0)
+    new_log_proba= log(weights[target_number] * exp(-dE_target)) - log(new_ttl_energy)
+
+    #metropolis criterion
+    accept=false
+    if new_log_proba >= log_proba_target 
+        accept=true
+    end
+    if rand() <= exp(beta * (new_log_proba - log_proba_target))
+        accept=true
+    end
+    
+    if accept
+        new_seq=copy(seq) #copy only if we accept
+        new_seq[pos]=new_aa
+        for (s, delta) in affected #update of the weights vector in place
+            weights[s] *= exp(-delta)
+        end
+        return new_seq, new_ttl_energy, new_log_proba
+    else
+        return seq, ttl_energy, log_proba_target
+    end
+end
+
+
+
+
+#algo function
+function algo(seq, target_number, all_ctc_maps, epochs=100, beta=100)
+    #pre-calculations (only once)
+    pos_contacts=precompute_pos_contacts(all_ctc_maps)
+    weights= init_weights(all_ctc_maps,seq)
+    ttl_energy=sum(weights)
+    actual_seq=copy(seq)
+    log_proba_target=log(weights[target_number])-log(ttl_energy)
+    p_struct_time_t=Float64[]
+
+    for i in 1:epochs
+        if i % 100 == 0
+            println("epoch number $i")
+        end
+
+        push!(p_struct_time_t,exp(log_proba_target))
+
+        mut= mutation(actual_seq)
+        actual_seq, ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, beta)
+    end
+
+    return actual_seq, p_struct_time_t
+end
+
+
+Profile.clear()
+@profile algo(seq, target_number, all_ctc_maps, 1000, 1000)
 ProfileView.view()
