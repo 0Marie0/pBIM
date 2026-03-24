@@ -143,16 +143,19 @@ module HamiltonianPath
         end
     end
 
-    # ------------------------------ Constants ------------------------------
+    # ------------------------------ Variables ------------------------------
     # cube 3*3*3
     const N = 3
     const TOTAL_NODES = N^3
-    const ROT_TABLE = Base.invokelatest(generate_rotation_table)
-    const ADJ = Base.invokelatest(build_graph)
-    paths, _ = Base.invokelatest(find_all_unique_conformations)
+    const ROT_TABLE = generate_rotation_table()
+    const ADJ = build_graph()
+    paths, _ = find_all_unique_conformations()
     const PATHS = paths
 
     # ------------------------------ Exports ------------------------------
-    export id_to_coords, coords_to_id, ADJ, PATHS, find_all_unique_conformations, paths_to_file
+    #Functions
+    export id_to_coords, coords_to_id, generate_rotation_table, get_canonical, build_graph, find_all_unique_conformations, paths_to_file
+    #Global variables
+    export ADJ, PATHS, ROT_TABLE
 
 end #module HamiltonianPath
