@@ -82,6 +82,54 @@ module Visualization
         return p
     end
 
+    function plot_cube_path(x, y, z, lx, ly, lz, path)
+        p = plot(lx, ly, lz, color=:black, alpha=0.5, lw=0.5, label="")
+
+        n_steps = length(path) - 1
+        colors = cgrad(:plasma, n_steps, categorical=true)  
+
+        for i in 1:n_steps
+            n1, n2 = path[i], path[i+1]
+            c1 = id_to_coords(n1)
+            c2 = id_to_coords(n2)
+
+            plot!(p,
+                [c1[1], c2[1]],
+                [c1[2], c2[2]],
+                [c1[3], c2[3]],
+                color = colors[i],
+                lw = 3,
+                label = ""
+            )
+        end
+
+        # highlight start and end points
+        c_start = id_to_coords(path[1])
+        c_end   = id_to_coords(path[end])
+
+        scatter!(p,
+            [c_start[1]], [c_start[2]], [c_start[3]],
+            markersize=8, markercolor=:blue, label="Start"
+        )
+        scatter!(p,
+            [c_end[1]], [c_end[2]], [c_end[3]],
+            markersize=8, markercolor=:yellow, label="End"
+        )
+
+        scatter!(p, x, y, z,
+            markersize=4,
+            markercolor=:blue,
+            xlims=(0, 2), ylims=(0, 2), zlims=(0, 2),
+            hover=indices_hover,
+            showaxis=false,
+            grid=false,
+            ticks=false,
+            aspect_ratio=:equal
+        )
+
+        return p
+    end
+
     # ------------------------------ Constants ------------------------------
     const ALL_EDGES, _ = all_edges_3x3x3()
     const x, y, z = invokelatest(get_nodes)
@@ -89,4 +137,9 @@ module Visualization
     const indices_hover = invokelatest() do
         [coords_to_id(xi, yi, zi) for (xi, yi, zi) in zip(x, y, z)]
     end
+
+    # ------------------------------ Exports ------------------------------
+    #Functions
+    export plot_cube_ctc_map, plot_cube_path
+
 end
