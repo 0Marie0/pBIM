@@ -289,6 +289,8 @@ module Metropolis
     df = CSV.read(joinpath(@__DIR__, "../MJ.csv"), DataFrame; delim='\t', header=false)
     const MJ = Matrix{Float64}(df)*5
 
+    # carefull : you have to comment the part you don't want (otherwise you'll only have the few data version)
+    # with all the data
     seq=generate_seq()
     target_number=75005
     all_ctc_maps = all_contact_maps(PATHS)

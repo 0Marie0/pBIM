@@ -186,8 +186,43 @@ module Benchmark
     end
 
 
+    function plot_distances_inter_intra(results::Dict{Int, Dict{Int, Vector{Int}}})
+    runs = sort(collect(keys(results)))
+    timestamps = sort(collect(intersect([keys(results[r]) for r in runs]...)))
+
+    n_runs = length(runs)
+
+    # distance seq(t) vs seq(t0) for each run
+    intra_dist = [zeros(length(timestamps)) for _ in 1:n_runs]
+    for (r_idx, r) in enumerate(runs)
+        ref = results[r][timestamps[1]]  # seq(t0)
+        for (t_idx, t) in enumerate(timestamps)
+            intra_dist[r_idx][t_idx] = hamming_distance(ref, results[r][t])
+        end
+    end
+
+    # mean dist at each timestamp 
+    inter_mean = zeros(length(timestamps))
+    for (t_idx, t) in enumerate(timestamps)
+        seqs_at_t = [results[r][t] for r in runs]
+        distances = [hamming_distance(seqs_at_t[i], seqs_at_t[j])
+                    for i in 1:n_runs for j in i+1:n_runs]
+        inter_mean[t_idx] = mean(distances)
+    end
+
+    # affichage sur le même graphique
+    p = plot(title="Évolution des distances de séquences", xlabel="Epoch", ylabel="Distance de Hamming")
+    for (r_idx, evo_dist) in enumerate(intra_dist) 
+        plot!(p, timestamps, evo_dist, label="Run $r_idx", alpha=0.5, color=:blue)
+    end
+    plot!(p, timestamps, inter_mean, label="Distance inter moyenne", color=:red, linewidth=2)
+
+    display(p)
+    end
+
+
 # ------------------------------ Exports ------------------------------
     #Functions
-    export benchmark_beta, hamming_distance, find_clusters, show_clusters, multi_init, calculate_variances, plot_variances
+    export benchmark_beta, hamming_distance, find_clusters, show_clusters, multi_init, calculate_variances, plot_variances, plot_distances_inter_intra
 
 end

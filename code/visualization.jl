@@ -140,6 +140,6 @@ module Visualization
 
     # ------------------------------ Exports ------------------------------
     #Functions
-    export plot_cube_ctc_map, plot_cube_path
+    export plot_cube_ctc_map, plot_cube_path, contact_map, x, y, z
 
 end
