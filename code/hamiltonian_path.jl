@@ -143,6 +143,24 @@ module HamiltonianPath
         end
     end
 
+
+    #function for keeping only a part of the data (to test quickly for example)
+    #percentage needs to be superior to 0 and max 100
+    function reduce_data(paths, percentage=10)
+        @assert 0< percentage <=100 "Value of percentage needs to be superior to 0 and max 100"
+        step=100.0 / percentage
+        result=OrderedSet{Vector{Int8}}()
+        next=1.0
+
+        for i in 1:length(paths)
+            if i>= next
+                push!(result, paths[i])
+                next += step
+            end
+        end
+        return result
+    end
+
     # ------------------------------ Variables ------------------------------
     # cube 3*3*3
     const N = 3
@@ -152,9 +170,10 @@ module HamiltonianPath
     paths, _ = find_all_unique_conformations()
     const PATHS = paths
 
+
     # ------------------------------ Exports ------------------------------
     #Functions
-    export id_to_coords, coords_to_id, generate_rotation_table, get_canonical, build_graph, find_all_unique_conformations, paths_to_file
+    export id_to_coords, coords_to_id, generate_rotation_table, get_canonical, build_graph, find_all_unique_conformations, reduce_data, paths_to_file
     #Global variables
     export ADJ, PATHS, ROT_TABLE
 

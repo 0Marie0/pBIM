@@ -274,7 +274,7 @@ module Metropolis
         _, p_struct_time_t,_=algo(seq, target_number, all_ctc_maps, epochs, beta, threshold, step, show_progress)
         t=1:length(p_struct_time_t)
         p = plot(t, p_struct_time_t, xlabel="Time", ylabel="Probability", title="Evolution of the probability of the sequence over time")
-        savefig(p, joinpath(@__DIR__, "../figures/probability.png"))
+        savefig(p, joinpath(@__DIR__, "../figures/probability_$(length(all_ctc_maps)).png"))
         return p
     end
 
@@ -292,7 +292,15 @@ module Metropolis
     seq=generate_seq()
     target_number=75005
     all_ctc_maps = all_contact_maps(PATHS)
-    plot_probability(seq, target_number, all_ctc_maps)
+    plot_probability(seq, target_number, all_ctc_maps, 10000)
+
+
+    #with few data
+    paths_bis=reduce_data(PATHS, 10)
+    seq=generate_seq()
+    target_number=1234
+    all_ctc_maps = all_contact_maps(paths_bis)
+    plot_probability(seq, target_number, all_ctc_maps, 10000)
 
 
 
