@@ -120,14 +120,33 @@ module Benchmark
     end
 
 
-    function multi_init(
+    function multi_init_final_seq(
+        target_number::Int,
+        all_ctc_maps::Vector;
+        beta::Float64=100.0,
+        runs::Int=10000
+    )
+
+        results = Dict{Int, Vector{Int}}()
+        print("ici")
+
+        @showprogress desc="Multi-init" for i in 1:runs
+
+            seq = generate_seq()
+            final_seq, _, _ = algo(seq, target_number, all_ctc_maps, runs, beta)        
+            results[i] = final_seq
+        end
+        return results
+    end
+
+    function multi_init_seq_over_time(
         target_number::Int,
         all_ctc_maps::Vector;
         epochs::Int=4000,
         beta::Float64=100.0,
         threshold::Int=2000,
         step::Int=200,
-        runs::Int=10000
+        runs::Int=10
     )
 
         results = Dict{Int, Dict{Int, Vector{Int}}}()
@@ -220,9 +239,20 @@ module Benchmark
     display(p)
     end
 
+    function calcul_dist_final(results::Dict{Int, Vector{Int}})
+        runs = sort(collect(keys(results)))
+        final_seqs = [results[r] for r in runs]
+        n_runs = length(runs)
+
+        inter_distances = [hamming_distance(final_seqs[i], final_seqs[j])
+                            for i in 1:n_runs for j in i+1:n_runs]
+        return inter_distances
+        
+    end
+
 
 # ------------------------------ Exports ------------------------------
     #Functions
-    export benchmark_beta, hamming_distance, find_clusters, show_clusters, multi_init, calculate_variances, plot_variances, plot_distances_inter_intra
+    export benchmark_beta, hamming_distance, find_clusters, show_clusters, multi_init_seq_over_time, multi_init_final_seq , calculate_variances, plot_variances, plot_distances_inter_intra, calcul_dist_final
 
 end
