@@ -21,4 +21,6 @@ println("metropolis imported, importing benchmark")
 includet("file_benchmark.jl")
 
 println("benchmark imported, importing visualization")
-includet("visualization.jl")
+includet("file_visualization.jl")
+
+println("visualization imported, importing lattice_protein")

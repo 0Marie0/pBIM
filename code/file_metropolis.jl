@@ -258,12 +258,32 @@ end
 
 
 
-function plot_probability(seq, target_number, all_ctc_maps, epochs=1000, beta=100, threshold=2000, step=200, show_progress=true)
+function plot_probability(seq, target_number, all_ctc_maps, epochs=1000, beta=100, threshold=2000, step=200, show_progress=true, matrix_name=matrix_name)
     _, p_struct_time_t, _ = algo(seq, target_number, all_ctc_maps, epochs, beta, threshold, step, show_progress)
     t = 1:length(p_struct_time_t)
     p = plot(t, p_struct_time_t, xlabel="Time", ylabel="Probability", title="Evolution of the probability of the sequence over time")
-    savefig(p, joinpath(@__DIR__, "../figures/probability_$(length(all_ctc_maps)).png"))
+    savefig(p, joinpath(@__DIR__, "../figures/probability_$(length(all_ctc_maps))_$(matrix_name)_beta_$(beta).svg"))
     return p
+end
+
+
+function choose_MJ(matrix="MJ_1996")
+    if matrix == "MJ_1996"
+        dir = joinpath(@__DIR__, "../MJ_1996.csv")
+        matrix_name = "MJ_1996"
+        df = CSV.read(dir, DataFrame; delim='\t', header=false)
+        final_matrix = Matrix{Float64}(df)
+    elseif matrix == "MJ"
+        dir = joinpath(@__DIR__, "../MJ.csv")
+        matrix_name = "MJ*5"
+        df = CSV.read(dir, DataFrame; delim='\t', header=false)
+        final_matrix = Matrix{Float64}(df)
+        final_matrix .*= 5.0 # Multiplie tous les éléments de la matrice par 5
+    else
+        error("Matrix not recognized. Please choose either 'MJ_1996' or 'MJ'.")
+    end
+
+    return final_matrix, matrix_name
 end
 
 
@@ -271,23 +291,7 @@ end
 edges, count = all_edges_3x3x3()
 const ALL_EDGES = edges
 const aa = ["CYS", "MET", "PHE", "ILE", "LEU", "VAL", "TRP", "TYR", "ALA", "GLY", "THR", "SER", "GLN", "ASN", "GLU", "ASP", "HIS", "ARG", "LYS"]
-const aa_idx = Dict(i => aa[i] for i in eachindex(aa)) #i changed the logic of the dictionnary, now key=1:20 and value=aa
+const aa_idx = Dict(i => aa[i] for i in eachindex(aa)) # change the logic of the dictionnary, now key=1:20 and value=aa
 
-#Reading the file and converting into a matrix 
-df = CSV.read(joinpath(@__DIR__, "../MJ.csv"), DataFrame; delim='\t', header=false)
-const MJ = Matrix{Float64}(df) * 5
-
-# carefull : you have to comment the part you don't want (otherwise you'll only have the few data version)
-# with all the data
-seq = generate_seq()
-target_number = 75005
-all_ctc_maps = all_contact_maps(PATHS)
-plot_probability(seq, target_number, all_ctc_maps, 10000)
-
-
-#with few data
-paths_bis = reduce_data(PATHS, 10)
-seq = generate_seq()
-target_number = 1234
-all_ctc_maps = all_contact_maps(paths_bis)
-plot_probability(seq, target_number, all_ctc_maps, 10000)
+# Reading the file and converting into a matrix 
+const MJ, matrix_name = choose_MJ("MJ") # Carefull, its a const for efficiency, if we want to change it, we need to restart the kernel.

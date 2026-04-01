@@ -15,6 +15,7 @@ function benchmark_beta()
     end
 
     fig = plot(plots..., layout=(2, 2), size=(1200, 600))
+    savefig(fig, joinpath(@__DIR__, "../figures/benchmark_beta_$(matrix_name).svg"))
     display(fig)
 
     return results
@@ -210,6 +211,8 @@ function plot_distances_inter_intra(results::Dict{Int,Dict{Int,Vector{Int}}})
             intra_dist[r_idx][t_idx] = hamming_distance(ref, results[r][t])
         end
     end
+    # mean distance seq(t) vs seq(t0) for all runs
+    intra_mean = [mean([intra_dist[r_idx][t_idx] for r_idx in 1:n_runs]) for t_idx in 1:length(timestamps)]
 
     # mean dist at each timestamp 
     inter_mean = zeros(length(timestamps))
@@ -223,9 +226,11 @@ function plot_distances_inter_intra(results::Dict{Int,Dict{Int,Vector{Int}}})
     # affichage sur le même graphique
     p = plot(title="Évolution des distances de séquences", xlabel="Epoch", ylabel="Distance de Hamming")
     for (r_idx, evo_dist) in enumerate(intra_dist)
-        plot!(p, timestamps, evo_dist, label="Run $r_idx", alpha=0.5, color=:blue)
+        plot!(p, timestamps, evo_dist, label=false, alpha=0.3, color=:blue)
     end
+    plot!(p, timestamps, intra_mean, label="Moyenne intra", color=:blue, linewidth=3)
     plot!(p, timestamps, inter_mean, label="Distance inter moyenne", color=:red, linewidth=2)
+    savefig(p, joinpath(@__DIR__, "../figures/distances_inter_intra_.svg"))
 
     display(p)
 end
