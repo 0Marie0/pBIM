@@ -197,7 +197,7 @@ function plot_variances(timestamps, intra_curves, inter_var, n_curves::Int=5)
 end
 
 
-function plot_distances_inter_intra(results::Dict{Int,Dict{Int,Vector{Int}}})
+function plot_distances_inter_intra(results::Dict{Int,Dict{Int,Vector{Int}}}; beta::Float64)
     runs = sort(collect(keys(results)))
     timestamps = sort(collect(intersect([keys(results[r]) for r in runs]...)))
 
@@ -211,26 +211,53 @@ function plot_distances_inter_intra(results::Dict{Int,Dict{Int,Vector{Int}}})
             intra_dist[r_idx][t_idx] = hamming_distance(ref, results[r][t])
         end
     end
+
     # mean distance seq(t) vs seq(t0) for all runs
     intra_mean = [mean([intra_dist[r_idx][t_idx] for r_idx in 1:n_runs]) for t_idx in 1:length(timestamps)]
 
-    # mean dist at each timestamp 
+
+    # mean & std dist at each timestamp 
     inter_mean = zeros(length(timestamps))
+    inter_std = zeros(length(timestamps))
     for (t_idx, t) in enumerate(timestamps)
         seqs_at_t = [results[r][t] for r in runs]
         distances = [hamming_distance(seqs_at_t[i], seqs_at_t[j])
                      for i in 1:n_runs for j in i+1:n_runs]
         inter_mean[t_idx] = mean(distances)
+        inter_std[t_idx] = std(distances)
     end
+    inter_lower = inter_mean .- inter_std
+    inter_upper = inter_mean .+ inter_std
 
-    # affichage sur le même graphique
-    p = plot(title="Évolution des distances de séquences", xlabel="Epoch", ylabel="Distance de Hamming")
+
+    # Plotting
+    p = plot(title="Évolution des distances de séquences", xlabel="Epoch", ylabel="Distance de Hamming", legend=:bottomright)
+
+    # Each individual curve of seq(t) vs seq(t0)
     for (r_idx, evo_dist) in enumerate(intra_dist)
         plot!(p, timestamps, evo_dist, label=false, alpha=0.3, color=:blue)
     end
-    plot!(p, timestamps, intra_mean, label="Moyenne intra", color=:blue, linewidth=3)
-    plot!(p, timestamps, inter_mean, label="Distance inter moyenne", color=:red, linewidth=2)
-    savefig(p, joinpath(@__DIR__, "../figures/distances_inter_intra_.svg"))
+
+    # Mean curve with shaded area for intra distance
+    plot!(p, timestamps, inter_upper, fillrange=inter_lower, fillalpha=0.2, fillcolor=:red, linecolor=:red, label="± std inter")
+    plot!(p, timestamps, intra_mean, label="intra distance mean", color=:blue, linewidth=3)
+    plot!(p, timestamps, inter_mean, label="inter distance mean", color=:red, linewidth=2)
+
+    # vertical line if convergence (mean intra distance cross the shaded area of inter distance)
+    cv_epoch = nothing # moment where the mean intra distance crosses the inter distance area
+    for (t_idx, t) in enumerate(timestamps)
+        if intra_mean[t_idx] > inter_lower[t_idx]
+            cv_epoch = t
+            break
+        end
+    end
+
+    if cv_epoch !== nothing
+        vline!(p, [cv_epoch], label="Convergence", color=:black, linestyle=:dash)
+    end
+
+    # Save
+    savefig(p, joinpath(@__DIR__, "../figures/distances_inter_intra_$(timestamps[1])_$(timestamps[end])_$(beta).svg"))
 
     display(p)
 end
