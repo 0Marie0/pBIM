@@ -23,4 +23,7 @@ includet("file_benchmark.jl")
 println("benchmark imported, importing visualization")
 includet("file_visualization.jl")
 
-println("visualization imported, importing lattice_protein")
+println("visualization imported, importing tree")
+includet("file_tree.jl")
+
+println("tree imported, importing lattice_protein")

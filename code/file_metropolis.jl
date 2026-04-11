@@ -217,6 +217,49 @@ function algo(seq, target_number, all_ctc_maps, epochs=1000, beta=100, threshold
 end
 
 
+function algo_count_only_if_mut_accepted(seq, target_number, all_ctc_maps, epochs=1000, beta=100, threshold=2000, step=200, show_progress=true)
+    #pre-calculations (only once)
+    pos_contacts = precompute_pos_contacts(all_ctc_maps)
+    weights = init_weights(all_ctc_maps, seq)
+    ttl_energy = sum(weights)
+    actual_seq = copy(seq)
+    log_proba_target = log(weights[target_number]) - log(ttl_energy)
+    p_struct_time_t = Float64[]
+    #saved_structures = save_struct ? Dict{Int, Vector{Int}}() : nothing  # alloué seulement si nécessaire
+    saved_structures = Dict{Int,Vector{Int}}()
+
+
+    affected = Dict{Int,Float64}()  #alloué une seule fois
+
+    @showprogress enabled = show_progress desc = "algo (β=$beta)" for i in 1:epochs
+        #recalibration périodique, pour éviter la dérive a cause des arrondis et donc log(négatif)
+        ttl_energy = sum(weights)  #recalcul exact
+
+        push!(p_struct_time_t, exp(log_proba_target))
+
+        empty!(affected)  # vider sans réallouer
+
+        mut = mutation(actual_seq)
+        old_seq=copy(actual_seq)
+
+        #actual_seq, ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
+        ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
+        
+        #if seq didn't change with metropolis, we don't count this iteration
+        if old_seq==actual_seq
+            i-=1
+        end
+
+        if i >= threshold && i % step == 0
+            saved_structures[i] = copy(actual_seq)
+        end
+
+    end
+    return actual_seq, p_struct_time_t, saved_structures
+end
+
+
+
 function algo_show_probability_distribution(seq, target_number, all_ctc_maps, epochs=100, beta=100, save_struct=false, threshold=2000)
     #pre-calculations (only once)
     pos_contacts = precompute_pos_contacts(all_ctc_maps)
