@@ -1,5 +1,3 @@
-using TreeTools
-
 # ------------------------------ Functions ------------------------------
 function create_genealogy(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps, beta=100)
     """
@@ -11,12 +9,12 @@ function create_genealogy(root_seq, distance_btw_nodes, number_of_nodes, target_
     """
 
     name_cpt = 0
-    seq_dict = Dict{String, Vector{Int}}()  # name -> sequence
+    seq_dict = Dict{String,Vector{Int}}()  # name -> sequence
 
     function evolve(seq)
         evolved_seq, _, _ = algo_count_only_if_mut_accepted(copy(seq), target_number, all_ctc_maps,
-                                  distance_btw_nodes, beta,
-                                  distance_btw_nodes+1, distance_btw_nodes+1, false)
+            distance_btw_nodes, beta,
+            distance_btw_nodes + 1, distance_btw_nodes + 1, false)
         return evolved_seq
     end
 
@@ -74,10 +72,10 @@ function plot_distance_matrix(seq_dict)
     n = length(names)
 
     p = heatmap(names, names, D,
-        color = :viridis,
-        title = "Hamming Distance between nodes",
-        xrotation = 45,
-        aspect_ratio = :equal,
+        color=:viridis,
+        title="Hamming Distance between nodes",
+        xrotation=45,
+        aspect_ratio=:equal,
     )
 
     #add values in each case
