@@ -272,3 +272,21 @@ function calcul_dist_final(results::Dict{Int,Vector{Int}})
     return inter_distances
 
 end
+
+
+function amount_of_mutations(sequences_over_time::Dict{Int,Vector{Int}})
+    timestamps = sort(collect(keys(sequences_over_time)))
+    n_mutations_per_position = Dict{Int,Int}()
+
+    for i in 2:length(timestamps)
+        seq_t = sequences_over_time[timestamps[i]]
+        seq_before = sequences_over_time[timestamps[i-1]]
+        for pos in 1:length(seq_t)
+            if seq_t[pos] != seq_before[pos]
+                n_mutations_per_position[pos] = get(n_mutations_per_position, pos, 0) + 1
+            end
+        end
+    end
+
+    return n_mutations_per_position
+end

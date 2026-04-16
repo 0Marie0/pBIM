@@ -119,8 +119,8 @@ function plot_cube_path(x, y, z, lx, ly, lz, path)
     )
 
     scatter!(p, x, y, z,
-        markersize=4,
-        markercolor=:blue,
+        markersize=0.000001,
+        markercolor=:black,
         xlims=(0, 2), ylims=(0, 2), zlims=(0, 2),
         hover=indices_hover,
         showaxis=false,
@@ -131,6 +131,60 @@ function plot_cube_path(x, y, z, lx, ly, lz, path)
 
     return p
 end
+
+function plot_cube_with_mutations_on_sphere(x, y, z, lx, ly, lz, path, n_mutations_per_position::Dict{Int,Int})
+    p = plot(lx, ly, lz, color=:black, alpha=0.5, lw=0.5, label="")
+
+    n_steps = length(path) - 1
+
+    for i in 1:n_steps
+        n1, n2 = path[i], path[i+1]
+        c1 = id_to_coords(n1)
+        c2 = id_to_coords(n2)
+
+        plot!(p,
+            [c1[1], c2[1]],
+            [c1[2], c2[2]],
+            [c1[3], c2[3]],
+            color=:black,
+            lw=3,
+            label=""
+        )
+    end
+
+    # highlight start and end points
+    c_start = id_to_coords(path[1])
+    c_end = id_to_coords(path[end])
+
+
+
+    # 1. On prépare les valeurs numériques (le nombre de mutations)
+    # C'est ce vecteur qui va piloter la couleur et la colorbar
+    mutation_values = [get(n_mutations_per_position, i, 0) for i in 1:length(x)]
+
+    # 2. On prépare les tailles
+    max_mut = maximum(values(n_mutations_per_position), init=1)
+    markersize = [15 * (m / max_mut) for m in mutation_values]
+
+
+    scatter!(p, x, y, z,
+        markersize=markersize,
+        marker_z=mutation_values,
+        color=:plasma,
+        colorbar=true,
+        markerstrokewidth=0.5,
+        markeralpha=0.8,
+        label="",
+        hover=markersize,
+        xlims=(0, 2), ylims=(0, 2), zlims=(0, 2),
+        aspect_ratio=:equal,
+        showaxis=false, grid=false, ticks=false
+    )
+
+    return p
+end
+
+
 
 # ------------------------------ Variables ------------------------------
 const ALL_EDGES, _ = all_edges_3x3x3()
