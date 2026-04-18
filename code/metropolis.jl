@@ -230,8 +230,9 @@ function algo_count_only_if_mut_accepted(seq, target_number, all_ctc_maps, epoch
 
 
     affected = Dict{Int,Float64}()  #alloué une seule fois
+    cpt_mut_accepted=0
 
-    @showprogress enabled = show_progress desc = "algo_mutation (β=$beta)" for i in 1:epochs
+    while cpt_mut_accepted<epochs
         #recalibration périodique, pour éviter la dérive a cause des arrondis et donc log(négatif)
         ttl_energy = sum(weights)  #recalcul exact
 
@@ -240,18 +241,18 @@ function algo_count_only_if_mut_accepted(seq, target_number, all_ctc_maps, epoch
         empty!(affected)  # vider sans réallouer
 
         mut = mutation(actual_seq)
-        old_seq = copy(actual_seq)
+        old_seq=copy(actual_seq)
 
         #actual_seq, ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
         ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
-
+        
         #if seq didn't change with metropolis, we don't count this iteration
-        if old_seq == actual_seq
-            i -= 1
+        if old_seq!=actual_seq
+            cpt_mut_accepted+=1
         end
 
-        if i >= threshold && i % step == 0
-            saved_structures[i] = copy(actual_seq)
+        if cpt_mut_accepted >= threshold && cpt_mut_accepted % step == 0
+            saved_structures[cpt_mut_accepted] = copy(actual_seq)
         end
 
     end

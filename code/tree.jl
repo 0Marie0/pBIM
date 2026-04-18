@@ -11,15 +11,9 @@ function create_genealogy(root_seq, distance_btw_nodes, number_of_nodes, target_
     seq_dict = Dict{String,Vector{Int}}()  # name -> sequence
 
     function evolve(seq)
-<<<<<<< HEAD:code/file_tree.jl
-        evolved_seq,_,_ = algo_count_only_if_mut_accepted(copy(seq), target_number, all_ctc_maps,
-                                  distance_btw_nodes, beta,
-                                  distance_btw_nodes+1, distance_btw_nodes+1, false)
-=======
         evolved_seq, _, _ = algo_count_only_if_mut_accepted(copy(seq), target_number, all_ctc_maps,
             distance_btw_nodes, beta,
             distance_btw_nodes + 1, distance_btw_nodes + 1, false)
->>>>>>> 19887eb073473484036971ae5df21681fb288c99:code/tree.jl
         return evolved_seq
     end
 
@@ -76,7 +70,6 @@ function plot_distance_matrix(seq_dict)
     D, names = distance_matrix(seq_dict)
     n = length(names)
 
-<<<<<<< HEAD:code/file_tree.jl
     p = heatmap(1:n, 1:n, D,
         color = :viridis,
         title = "Hamming Distance between nodes",
@@ -85,13 +78,6 @@ function plot_distance_matrix(seq_dict)
         xticks = (1:n, names),
         yticks = (1:n, names),
         yflip = true,
-=======
-    p = heatmap(names, names, D,
-        color=:viridis,
-        title="Hamming Distance between nodes",
-        xrotation=45,
-        aspect_ratio=:equal,
->>>>>>> 19887eb073473484036971ae5df21681fb288c99:code/tree.jl
     )
 
     for i in 1:n, j in 1:n
