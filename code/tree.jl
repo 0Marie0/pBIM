@@ -86,3 +86,81 @@ function plot_distance_matrix(seq_dict)
 
     return p
 end
+
+
+
+function fitch_reconstruction(tree, seq_dict)
+    n_sites = length(first(values(seq_dict)))
+
+    fitch_sets = Dict{String, Vector{Set{Int}}}() #up (Set for no duplicates)
+    reconstructed = Dict{String, Vector{Int}}() #down
+
+    #up part (leaves to root)
+    for node in postorder_traversal(tree) #post_order = leaves to root
+        name = label(node)
+
+        if isleaf(node)
+            #Leaf : Fitch set is the singleton {base}
+            seq = seq_dict[name]
+            fitch_sets[name] = [Set([aa]) for aa in seq]
+
+        else
+            #internal node : intersection if non-empty, else union
+            children_sets = [fitch_sets[label(c)] for c in children(node)]
+            fitch_sets[name] = Vector{Set{Int}}(undef, n_sites)
+
+            for site in 1:n_sites
+                #We start from the intersection with the first child's set
+                inter = copy(children_sets[1][site])
+                for cs in children_sets[2:end] #here it's binary tree, just in case
+                    intersect!(inter, cs[site])
+                end
+
+                if isempty(inter)
+                    #empty intersection -> we take the union of all the children
+                    uni = copy(children_sets[1][site])
+                    for cs in children_sets[2:end]
+                        union!(uni, cs[site])
+                    end
+                    fitch_sets[name][site] = uni
+                else
+                    fitch_sets[name][site] = inter
+                end
+            end
+        end
+    end
+
+    #down part
+    root_node = root(tree)
+    root_name = label(root_node)
+
+    #The root arbitrarily chooses an element from its set
+    reconstructed[root_name] = [first(s) for s in fitch_sets[root_name]]
+
+    for node in preorder_traversal(tree)
+        if isroot(node)
+            continue
+        end
+
+        name = label(node)
+        parent_name = label(ancestor(node))
+        parent_seq = reconstructed[parent_name]
+
+        reconstructed[name] = Vector{Int}(undef, n_sites)
+
+        for site in 1:n_sites
+            fs = fitch_sets[name][site]
+            
+            if parent_seq[site] in fs
+                #the parent's aa is in the set -> we keep it (parsimony)
+                reconstructed[name][site] = parent_seq[site]
+            else
+                #otherwise, we take any element from the set
+                reconstructed[name][site] = first(fs)
+            end
+        end
+    end
+
+    return reconstructed
+
+end
