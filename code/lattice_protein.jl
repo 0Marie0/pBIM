@@ -9,21 +9,23 @@ using ProgressLogging
 using ProgressMeter
 using Plots
 using Statistics
+using TreeTools
+
 
 
 println("Imports done, importing hamiltonian path")
-includet("file_hamiltonian_path.jl")
+includet("hamiltonian_path.jl")
 
 println("hamiltonian path imported, importing metropolis")
-includet("file_metropolis.jl")
+includet("metropolis.jl")
 
 println("metropolis imported, importing benchmark")
-includet("file_benchmark.jl")
+includet("benchmark.jl")
 
 println("benchmark imported, importing visualization")
-includet("file_visualization.jl")
+includet("visualization.jl")
 
 println("visualization imported, importing tree")
-includet("file_tree.jl")
+includet("tree.jl")
 
 println("tree imported, importing lattice_protein")
