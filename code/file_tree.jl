@@ -9,12 +9,11 @@ function create_genealogy(root_seq, distance_btw_nodes, number_of_nodes, target_
         - newick_str : Newick string compatible with TreeTools.jl
         - seq_dict : Dict{String, Vector{Int}} mapping node name -> sequence
     """
-
     name_cpt = 0
     seq_dict = Dict{String, Vector{Int}}()  # name -> sequence
 
     function evolve(seq)
-        evolved_seq, _, _ = algo_count_only_if_mut_accepted(copy(seq), target_number, all_ctc_maps,
+        evolved_seq,_,_ = algo_count_only_if_mut_accepted(copy(seq), target_number, all_ctc_maps,
                                   distance_btw_nodes, beta,
                                   distance_btw_nodes+1, distance_btw_nodes+1, false)
         return evolved_seq
@@ -62,9 +61,9 @@ end
 
 function simple_print_distance_matrix(seq_dict)
     D, names = distance_matrix(seq_dict)
-    println("     ", join(rpad.(names, 6)))
+    println("      ", join(rpad.(names, 6))) #6 characters padding
     for i in 1:length(names)
-        println(rpad(names[i], 5), join(rpad.(D[i, :], 6)))
+        println(rpad(names[i], 6), join(rpad.(D[i, :], 6)))
     end
 end
 
@@ -73,18 +72,19 @@ function plot_distance_matrix(seq_dict)
     D, names = distance_matrix(seq_dict)
     n = length(names)
 
-    p = heatmap(names, names, D,
+    p = heatmap(1:n, 1:n, D,
         color = :viridis,
         title = "Hamming Distance between nodes",
         xrotation = 45,
         aspect_ratio = :equal,
+        xticks = (1:n, names),
+        yticks = (1:n, names),
+        yflip = true,
     )
 
-    #add values in each case
     for i in 1:n, j in 1:n
         annotate!(p, j, i, text(string(D[i, j]), 9, :white))
     end
 
     return p
 end
-
