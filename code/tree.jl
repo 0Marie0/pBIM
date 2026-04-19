@@ -71,13 +71,13 @@ function plot_distance_matrix(seq_dict)
     n = length(names)
 
     p = heatmap(1:n, 1:n, D,
-        color = :viridis,
-        title = "Hamming Distance between nodes",
-        xrotation = 45,
-        aspect_ratio = :equal,
-        xticks = (1:n, names),
-        yticks = (1:n, names),
-        yflip = true,
+        color=:viridis,
+        title="Hamming Distance between nodes",
+        xrotation=45,
+        aspect_ratio=:equal,
+        xticks=(1:n, names),
+        yticks=(1:n, names),
+        yflip=true,
     )
 
     for i in 1:n, j in 1:n
@@ -92,8 +92,8 @@ end
 function fitch_reconstruction(tree, seq_dict)
     n_sites = length(first(values(seq_dict)))
 
-    fitch_sets = Dict{String, Vector{Set{Int}}}() #up (Set for no duplicates)
-    reconstructed = Dict{String, Vector{Int}}() #down
+    fitch_sets = Dict{String,Vector{Set{Int}}}() #up (Set for no duplicates)
+    reconstructed = Dict{String,Vector{Int}}() #down
 
     #up part (leaves to root)
     for node in postorder_traversal(tree) #post_order = leaves to root
@@ -150,7 +150,7 @@ function fitch_reconstruction(tree, seq_dict)
 
         for site in 1:n_sites
             fs = fitch_sets[name][site]
-            
+
             if parent_seq[site] in fs
                 #the parent's aa is in the set -> we keep it (parsimony)
                 reconstructed[name][site] = parent_seq[site]
@@ -163,4 +163,39 @@ function fitch_reconstruction(tree, seq_dict)
 
     return reconstructed
 
+end
+
+
+function reconstruction_error_hamming(reconstructed, seq_dict)
+    total_distance = 0
+    n = length(reconstructed)
+
+    for (name, recon_seq) in reconstructed
+        true_seq = seq_dict[name]
+        total_distance += hamming_distance(recon_seq, true_seq)
+        println("Hamming distance for $name : $(hamming_distance(recon_seq, true_seq))")
+    end
+
+    return total_distance / n
+end
+(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps, beta=100)
+
+
+function plot_reconstruction_error(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps, beta=100)
+    recon_errors = Float64[]
+    for d in distance_btw_nodes
+        newick_str, seq_dict = create_genealogy(root_seq, d, number_of_nodes, target_number, all_ctc_maps)
+        tree = readtree(IOBuffer(newick_str), :newick)
+        recon = fitch_reconstruction(tree, seq_dict)
+        error = reconstruction_error_hamming(recon, seq_dict)
+        push!(recon_errors, error)
+    end
+
+    p = plot(distance_btw_nodes, recon_errors,
+        xlabel="Distance between nodes",
+        ylabel="Average Hamming distance",
+        title="Reconstruction error given the distance between nodes",
+        # marker=:circle
+    )
+    return p
 end

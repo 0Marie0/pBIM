@@ -230,9 +230,9 @@ function algo_count_only_if_mut_accepted(seq, target_number, all_ctc_maps, epoch
 
 
     affected = Dict{Int,Float64}()  #alloué une seule fois
-    cpt_mut_accepted=0
+    cpt_mut_accepted = 0
 
-    while cpt_mut_accepted<epochs
+    while cpt_mut_accepted < epochs
         #recalibration périodique, pour éviter la dérive a cause des arrondis et donc log(négatif)
         ttl_energy = sum(weights)  #recalcul exact
 
@@ -241,14 +241,14 @@ function algo_count_only_if_mut_accepted(seq, target_number, all_ctc_maps, epoch
         empty!(affected)  # vider sans réallouer
 
         mut = mutation(actual_seq)
-        old_seq=copy(actual_seq)
+        old_seq = copy(actual_seq)
 
         #actual_seq, ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
         ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
-        
+
         #if seq didn't change with metropolis, we don't count this iteration
-        if old_seq!=actual_seq
-            cpt_mut_accepted+=1
+        if old_seq != actual_seq
+            cpt_mut_accepted += 1
         end
 
         if cpt_mut_accepted >= threshold && cpt_mut_accepted % step == 0
@@ -334,7 +334,7 @@ end
 # ------------------------------ Variables ------------------------------
 edges, count = all_edges_3x3x3()
 const ALL_EDGES = edges
-const aa = ["CYS", "MET", "PHE", "ILE", "LEU", "VAL", "TRP", "TYR", "ALA", "GLY", "THR", "SER", "GLN", "ASN", "GLU", "ASP", "HIS", "ARG", "LYS"]
+const aa = ["CYS", "MET", "PHE", "ILE", "LEU", "VAL", "TRP", "TYR", "ALA", "GLY", "THR", "SER", "GLN", "ASN", "GLU", "ASP", "HIS", "ARG", "LYS", "PRO"]
 const aa_idx = Dict(i => aa[i] for i in eachindex(aa)) # change the logic of the dictionnary, now key=1:20 and value=aa
 
 # Reading the file and converting into a matrix 
