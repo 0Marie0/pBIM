@@ -1,5 +1,5 @@
 # ------------------------------ Functions ------------------------------
-function create_genealogy(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps, beta=100)
+function create_genealogy(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps; beta=100)
     """
     Builds a binary tree of depth 'number_of_nodes' using Metropolis evolution.
     Each branch represents 'distance_btw_nodes' mutation steps.
@@ -173,21 +173,19 @@ function reconstruction_error_hamming(reconstructed, seq_dict)
     for (name, recon_seq) in reconstructed
         true_seq = seq_dict[name]
         total_distance += hamming_distance(recon_seq, true_seq)
-        println("Hamming distance for $name : $(hamming_distance(recon_seq, true_seq))")
     end
 
     return total_distance / n
 end
-(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps, beta=100)
 
 
-function plot_reconstruction_error(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps, beta=100)
+function plot_reconstruction_error(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps; beta=100)
     recon_errors = Float64[]
     for d in distance_btw_nodes
-        newick_str, seq_dict = create_genealogy(root_seq, d, number_of_nodes, target_number, all_ctc_maps)
-        tree = readtree(IOBuffer(newick_str), :newick)
-        recon = fitch_reconstruction(tree, seq_dict)
-        error = reconstruction_error_hamming(recon, seq_dict)
+        newick_str, seq_dict = create_genealogy(root_seq, d, number_of_nodes, target_number, all_ctc_maps, beta=beta)
+        tree = parse_newick_string(newick_str)
+        reconstruction_result = fitch_reconstruction(tree, seq_dict)
+        error = reconstruction_error_hamming(reconstruction_result, seq_dict)
         push!(recon_errors, error)
     end
 
@@ -195,7 +193,6 @@ function plot_reconstruction_error(root_seq, distance_btw_nodes, number_of_nodes
         xlabel="Distance between nodes",
         ylabel="Average Hamming distance",
         title="Reconstruction error given the distance between nodes",
-        # marker=:circle
     )
     return p
 end
