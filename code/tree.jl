@@ -179,7 +179,31 @@ function reconstruction_error_hamming(reconstructed, seq_dict)
 end
 
 
-function plot_reconstruction_error(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps; beta=100)
+function reconstruction_error_prob_folding(reconstructed, seq_dict, all_ctc_maps, target_number)
+    total_distance = 0
+    n = length(reconstructed)
+
+    for (name, recon_seq) in reconstructed
+        true_seq = seq_dict[name]
+        
+        old_proba_folding = proba_of_seq(true_seq, all_ctc_maps, target_number)
+        new_proba_folding = proba_of_seq(recon_seq, all_ctc_maps, target_number)
+        # println(name)
+        # println(old_proba_folding)
+        # println(new_proba_folding)
+        # println()
+        
+        #compute how much the new sequence is better/worse
+        #if the difference is positive, it means that the reconstructed seq has a better probability of folding
+        total_distance += new_proba_folding - old_proba_folding
+    end
+
+    return total_distance / n
+
+end
+
+
+function plot_reconstruction_error_hamming(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps; beta=100)
     recon_errors = Float64[]
     for d in distance_btw_nodes
         newick_str, seq_dict = create_genealogy(root_seq, d, number_of_nodes, target_number, all_ctc_maps, beta=beta)
@@ -192,7 +216,26 @@ function plot_reconstruction_error(root_seq, distance_btw_nodes, number_of_nodes
     p = plot(distance_btw_nodes, recon_errors,
         xlabel="Distance between nodes",
         ylabel="Average Hamming distance",
-        title="Reconstruction error given the distance between nodes",
+        title="Hamming reconstruction error given the distance between nodes",
+    )
+    return p
+end
+
+
+function plot_reconstruction_error_proba(root_seq, distance_btw_nodes, number_of_nodes, target_number, all_ctc_maps; beta=100)
+    recon_errors = Float64[]
+    for d in distance_btw_nodes
+        newick_str, seq_dict = create_genealogy(root_seq, d, number_of_nodes, target_number, all_ctc_maps, beta=beta)
+        tree = parse_newick_string(newick_str)
+        reconstruction_result = fitch_reconstruction(tree, seq_dict)
+        error = reconstruction_error_prob_folding(reconstruction_result, seq_dict, all_ctc_maps, target_number)
+        push!(recon_errors, error)
+    end
+
+    p = plot(distance_btw_nodes, recon_errors,
+        xlabel="Distance between nodes",
+        ylabel="Average folding probability difference",
+        title="Probabilistic reconstruction error given the distance between nodes",
     )
     return p
 end

@@ -217,6 +217,15 @@ function algo(seq, target_number, all_ctc_maps, epochs=1000, beta=100, threshold
 end
 
 
+function proba_of_seq(seq, all_ctc_maps, target_number)
+    weights = init_weights(all_ctc_maps, seq)
+    ttl_energy = sum(weights)
+    log_proba_target = exp(log(weights[target_number]) - log(ttl_energy))
+
+    return log_proba_target
+end
+
+
 function algo_count_only_if_mut_accepted(seq, target_number, all_ctc_maps, epochs=1000, beta=100, threshold=2000, step=200, show_progress=true)
     #pre-calculations (only once)
     pos_contacts = precompute_pos_contacts(all_ctc_maps)
