@@ -344,7 +344,9 @@ end
 edges, count = all_edges_3x3x3()
 const ALL_EDGES = edges
 const aa = ["CYS", "MET", "PHE", "ILE", "LEU", "VAL", "TRP", "TYR", "ALA", "GLY", "THR", "SER", "GLN", "ASN", "GLU", "ASP", "HIS", "ARG", "LYS", "PRO"]
+const clas_aa = ["-", "+", "pol_sans_char", "apol_aliph", "arom"]
 const aa_idx = Dict(i => aa[i] for i in eachindex(aa)) # change the logic of the dictionnary, now key=1:20 and value=aa
+const aa_class = Dict(1 => "pol_sans_char", 2 => "apol_aliph", 3 => "arom", 4 => "apol_aliph", 5 => "apol_aliph", 6 => "apol_aliph", 7 => "arom", 8 => "arom", 9 => "pol_sans_char", 10 => "pol_sans_char", 11 => "pol_sans_char", 12 => "pol_sans_char", 13 => "pol_sans_char", 14 => "pol_sans_char", 15 => "pol_sans_char", 16 => "+", 17 => "+", 18 => "-", 19 => "-", 20 => "pol_sans_char")
 
 # Reading the file and converting into a matrix 
 const MJ, matrix_name = choose_MJ("MJ") # Carefull, its a const for efficiency, if we want to change it, we need to restart the kernel.

@@ -174,7 +174,7 @@ end
 
 
 function plot_gif_cube_with_mutations(x, y, z, lx, ly, lz, path, sequences_over_time::Dict{Int,Vector{Int}};
-    gif_path="mutations.gif", fps=10, n_frames_skeleton=15)
+    gif_path="../figures/mutations.gif", fps=10, n_frames_skeleton=15)
 
     timestamps, mutations_over_time = amount_of_mutations_over_time(sequences_over_time)
 
