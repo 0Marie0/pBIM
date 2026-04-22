@@ -290,3 +290,31 @@ function amount_of_mutations(sequences_over_time::Dict{Int,Vector{Int}})
 
     return n_mutations_per_position
 end
+
+
+function amount_of_mutations_over_time(sequences_over_time::Dict{Int,Vector{Int}})
+    """
+    Does the same as amount_of_mutations but gives the amount of mutations at each position for each timestamp
+    """
+    timestamps = sort(collect(keys(sequences_over_time)))
+
+    n_mutations_over_time = Dict{Int,Dict{Int,Int}}()
+    cumulative = Dict{Int,Int}()
+
+    n_mutations_over_time[timestamps[1]] = Dict{Int,Int}()
+
+    for i in 2:length(timestamps)
+        seq_t = sequences_over_time[timestamps[i]]
+        seq_before = sequences_over_time[timestamps[i-1]]
+
+        for pos in 1:length(seq_t)
+            if seq_t[pos] != seq_before[pos]
+                cumulative[pos] = get(cumulative, pos, 0) + 1
+            end
+        end
+
+        n_mutations_over_time[timestamps[i]] = copy(cumulative)
+    end
+
+    return timestamps, n_mutations_over_time
+end

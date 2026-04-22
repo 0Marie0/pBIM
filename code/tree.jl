@@ -185,14 +185,14 @@ function reconstruction_error_prob_folding(reconstructed, seq_dict, all_ctc_maps
 
     for (name, recon_seq) in reconstructed
         true_seq = seq_dict[name]
-        
+
         old_proba_folding = proba_of_seq(true_seq, all_ctc_maps, target_number)
         new_proba_folding = proba_of_seq(recon_seq, all_ctc_maps, target_number)
         # println(name)
         # println(old_proba_folding)
         # println(new_proba_folding)
         # println()
-        
+
         #compute how much the new sequence is better/worse
         #if the difference is positive, it means that the reconstructed seq has a better probability of folding
         total_distance += new_proba_folding - old_proba_folding

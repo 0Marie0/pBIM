@@ -173,6 +173,71 @@ function plot_cube_with_mutations_on_sphere(x, y, z, lx, ly, lz, path, n_mutatio
 end
 
 
+function plot_gif_cube_with_mutations(x, y, z, lx, ly, lz, path, sequences_over_time::Dict{Int,Vector{Int}};
+    gif_path="mutations.gif", fps=10, n_frames_skeleton=15)
+
+    timestamps, mutations_over_time = amount_of_mutations_over_time(sequences_over_time)
+
+    # On récupère les mutations à la fin pour normaliser la taille des sphères
+    all_mutations = mutations_over_time[timestamps[end]]
+    max_mut = maximum(values(all_mutations), init=1)
+
+    n_steps = length(path) - 1
+
+    function base_plot(markersize_vec, mutation_values)
+        p = plot(lx, ly, lz,
+            color=:black, alpha=0.5, lw=0.5, label="",
+            xlims=(0, 2), ylims=(0, 2), zlims=(0, 2),
+            aspect_ratio=:equal,
+            showaxis=false, grid=false, ticks=false
+        )
+
+        for i in 1:n_steps
+            n1, n2 = path[i], path[i+1]
+            c1 = id_to_coords(n1)
+            c2 = id_to_coords(n2)
+            plot!(p,
+                [c1[1], c2[1]], [c1[2], c2[2]], [c1[3], c2[3]],
+                color=:black, lw=3, label=""
+            )
+        end
+
+        scatter!(p, x, y, z,
+            markersize=markersize_vec,
+            marker_z=mutation_values,
+            color=:plasma,
+            clims=(0, max_mut),
+            colorbar=true,
+            markerstrokewidth=0.5,
+            markeralpha=0.8,
+            label=""
+        )
+        return p
+    end
+
+    anim = @animate for frame in 1:(n_frames_skeleton+length(timestamps))
+
+        if frame <= n_frames_skeleton
+            # skeleton only during n_frames_skeleton frames
+            markersize_vec = zeros(length(x))
+            mutation_values = zeros(Int, length(x))
+        else
+            # sphere grows with mutations
+            t_idx = frame - n_frames_skeleton
+            t = timestamps[t_idx]
+            muts = mutations_over_time[t]
+
+            mutation_values = [get(muts, i, 0) for i in 1:length(x)]
+            markersize_vec = [15 * (m / max_mut) for m in mutation_values]
+
+        end
+        base_plot(markersize_vec, mutation_values)
+    end
+
+    gif(anim, gif_path, fps=fps)
+    println("GIF sauvegardé : $gif_path")
+end
+
 
 # ------------------------------ Variables ------------------------------
 const ALL_EDGES, _ = all_edges_3x3x3()
