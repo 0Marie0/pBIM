@@ -168,11 +168,13 @@ end
 
 function reconstruction_error_hamming(reconstructed, seq_dict)
     total_distance = 0
-    n = length(reconstructed)
+    n = 1
 
     for (name, recon_seq) in reconstructed
-        true_seq = seq_dict[name]
-        total_distance += hamming_distance(recon_seq, true_seq)
+        if name=="N1"
+            true_seq = seq_dict[name]
+            total_distance += hamming_distance(recon_seq, true_seq)
+        end
     end
 
     return total_distance / n
@@ -181,21 +183,23 @@ end
 
 function reconstruction_error_prob_folding(reconstructed, seq_dict, all_ctc_maps, target_number)
     total_distance = 0
-    n = length(reconstructed)
+    n = 1
 
     for (name, recon_seq) in reconstructed
-        true_seq = seq_dict[name]
+        if name=="N1"
+            true_seq = seq_dict[name]
 
-        old_proba_folding = proba_of_seq(true_seq, all_ctc_maps, target_number)
-        new_proba_folding = proba_of_seq(recon_seq, all_ctc_maps, target_number)
-        # println(name)
-        # println(old_proba_folding)
-        # println(new_proba_folding)
-        # println()
+            old_proba_folding = proba_of_seq(true_seq, all_ctc_maps, target_number)
+            new_proba_folding = proba_of_seq(recon_seq, all_ctc_maps, target_number)
+            # println(name)
+            # println(old_proba_folding)
+            # println(new_proba_folding)
+            # println()
 
-        #compute how much the new sequence is better/worse
-        #if the difference is positive, it means that the reconstructed seq has a better probability of folding
-        total_distance += new_proba_folding - old_proba_folding
+            #compute how much the new sequence is better/worse
+            #if the difference is positive, it means that the reconstructed seq has a better probability of folding
+            total_distance += new_proba_folding - old_proba_folding
+        end
     end
 
     return total_distance / n
@@ -238,4 +242,9 @@ function plot_reconstruction_error_proba(root_seq, distance_btw_nodes, number_of
         title="Probabilistic reconstruction error given the distance between nodes",
     )
     return p
+end
+
+
+function consensus_leaves(tree, seq_dict)
+
 end
