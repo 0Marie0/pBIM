@@ -173,9 +173,9 @@ function metropolis(mut, seq, target_number, weights, pos_contacts, ttl_energy, 
         for (s, delta) in affected
             weights[s] *= exp(-delta)
         end
-        return new_ttl_energy, new_log_proba
+        return new_ttl_energy, new_log_proba, true
     else
-        return ttl_energy, log_proba_target
+        return ttl_energy, log_proba_target, false
     end
 
 end
@@ -207,7 +207,7 @@ function algo(seq, target_number, all_ctc_maps, epochs=1000, beta=100, threshold
 
         mut = mutation(actual_seq)
         #actual_seq, ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
-        ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
+        ttl_energy, log_proba_target, _ = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
         if i >= threshold && i % step == 0
             saved_structures[i] = copy(actual_seq)
         end
@@ -250,13 +250,13 @@ function algo_count_only_if_mut_accepted(seq, target_number, all_ctc_maps, epoch
         empty!(affected)  # vider sans réallouer
 
         mut = mutation(actual_seq)
-        old_seq = copy(actual_seq)
+        #old_seq = copy(actual_seq)
 
         #actual_seq, ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
-        ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
+        ttl_energy, log_proba_target, accepted = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
 
         #if seq didn't change with metropolis, we don't count this iteration
-        if old_seq != actual_seq
+        if accepted 
             cpt_mut_accepted += 1
         end
 
@@ -288,7 +288,7 @@ function algo_show_probability_distribution(seq, target_number, all_ctc_maps, ep
 
         empty!(affected)
         mut = mutation(actual_seq)
-        ttl_energy, log_proba_target = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
+        ttl_energy, log_proba_target, _ = metropolis(mut, actual_seq, target_number, weights, pos_contacts, ttl_energy, log_proba_target, affected, beta)
 
         if save_struct && i >= threshold && i % 200 == 0
             saved_structures[i] = copy(actual_seq)

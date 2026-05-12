@@ -167,42 +167,28 @@ end
 
 
 function reconstruction_error_hamming(reconstructed, seq_dict)
-    total_distance = 0
-    n = 1
 
-    for (name, recon_seq) in reconstructed
-        if name=="N1"
-            true_seq = seq_dict[name]
-            total_distance += hamming_distance(recon_seq, true_seq)
-        end
-    end
+    name, recon_seq = first(sort(collect(reconstructed)))
+    true_seq = seq_dict[name]
+    total_distance = hamming_distance(recon_seq, true_seq)
 
-    return total_distance / n
+    return total_distance
 end
 
 
 function reconstruction_error_prob_folding(reconstructed, seq_dict, all_ctc_maps, target_number)
-    total_distance = 0
-    n = 1
+    name, recon_seq = first(sort(collect(reconstructed)))
 
-    for (name, recon_seq) in reconstructed
-        if name=="N1"
-            true_seq = seq_dict[name]
+    true_seq = seq_dict[name]
 
-            old_proba_folding = proba_of_seq(true_seq, all_ctc_maps, target_number)
-            new_proba_folding = proba_of_seq(recon_seq, all_ctc_maps, target_number)
-            # println(name)
-            # println(old_proba_folding)
-            # println(new_proba_folding)
-            # println()
+    old_proba_folding = proba_of_seq(true_seq, all_ctc_maps, target_number)
+    new_proba_folding = proba_of_seq(recon_seq, all_ctc_maps, target_number)
 
-            #compute how much the new sequence is better/worse
-            #if the difference is positive, it means that the reconstructed seq has a better probability of folding
-            total_distance += new_proba_folding - old_proba_folding
-        end
-    end
+    #compute how much the new sequence is better/worse
+    #if the difference is positive, it means that the reconstructed seq has a better probability of folding
+    total_distance = new_proba_folding - old_proba_folding
 
-    return total_distance / n
+    return total_distance
 
 end
 
@@ -245,6 +231,90 @@ function plot_reconstruction_error_proba(root_seq, distance_btw_nodes, number_of
 end
 
 
-function consensus_leaves(tree, seq_dict)
 
+function generate_trees(root_seq, branch_length, tree_depth, n_trees, target_number, all_ctc_maps; beta=100)
+    """
+    Génère n_trees arbres binaires indépendants depuis la même racine.
+    - branch_length : nombre de mutations par branche
+    - tree_depth : profondeur de l'arbre (nombre de niveaux)
+    Retourne une liste de (newick_str, seq_dict)
+    """
+    trees = []
+    for i in 1:n_trees
+        println(i)
+        newick_str, seq_dict = create_genealogy(root_seq, branch_length, tree_depth, target_number, all_ctc_maps, beta=beta)
+        push!(trees, (newick_str, seq_dict))
+    end
+    return trees
+end
+
+
+function plot_reconstruction_error_hamming(root_seq, root_to_leaf_distances, tree_depth, n_trees, target_number, all_ctc_maps; beta=100)
+    """
+    - root_to_leaf_distances : liste des distances racine→feuille à tester
+      (= branch_length * tree_depth, donc branch_length = d ÷ tree_depth)
+    """
+    means = Float64[]
+    stds  = Float64[]
+
+    for d in root_to_leaf_distances
+        branch_length = d ÷ tree_depth  # taille d'une branche individuelle
+
+        trees = generate_trees(root_seq, branch_length, tree_depth, n_trees, target_number, all_ctc_maps, beta=beta)
+
+        errors = Float64[]
+        for (newick_str, seq_dict) in trees
+            tree = parse_newick_string(newick_str)
+            recon = fitch_reconstruction(tree, seq_dict)
+            push!(errors, reconstruction_error_hamming(recon, seq_dict))
+        end
+
+        push!(means, mean(errors))
+        push!(stds,  std(errors))
+    end
+
+    p = plot(root_to_leaf_distances, means,
+        ribbon=stds,
+        fillalpha=0.2,
+        lw=2,
+        xlabel="Distance racine à feuille (branch_length x profondeur)",
+        ylabel="Distance de Hamming à la racine réelle",
+        title="Erreur de reconstruction Fitch (Hamming)\n(moyenne ± écart-type sur $n_trees arbres, profondeur $tree_depth)",
+        label="Fitch"
+    )
+    return p
+end
+
+
+function plot_reconstruction_error_proba(root_seq, root_to_leaf_distances, tree_depth, n_trees, target_number, all_ctc_maps; beta=100)
+    means = Float64[]
+    stds  = Float64[]
+
+    for d in root_to_leaf_distances
+        branch_length = d ÷ tree_depth
+
+        trees = generate_trees(root_seq, branch_length, tree_depth, n_trees, target_number, all_ctc_maps, beta=beta)
+
+        errors = Float64[]
+        for (newick_str, seq_dict) in trees
+            tree = parse_newick_string(newick_str)
+            recon = fitch_reconstruction(tree, seq_dict)
+            push!(errors, reconstruction_error_prob_folding(recon, seq_dict, all_ctc_maps, target_number))
+        end
+
+        push!(means, mean(errors))
+        push!(stds,  std(errors))
+    end
+
+    p = plot(root_to_leaf_distances, means,
+        ribbon=stds,
+        fillalpha=0.2,
+        lw=2,
+        xlabel="Distance racine à feuille (branch_length x profondeur)",
+        ylabel="Différence de probabilité de repliement",
+        title="Erreur de reconstruction Fitch (repliement)\n(moyenne ± écart-type sur $n_trees arbres, profondeur $tree_depth)",
+        label="Fitch"
+    )
+    hline!(p, [0.0], ls=:dot, color=:red, label="Racine réelle")
+    return p
 end
