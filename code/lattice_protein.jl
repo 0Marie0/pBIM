@@ -10,7 +10,7 @@ using ProgressMeter
 using Plots
 using Statistics
 using TreeTools
-
+import PlotlyJS #not "using" avoiding keeping PlotlyJS plot function
 
 
 println("Imports done, importing hamiltonian path")

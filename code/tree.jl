@@ -214,7 +214,7 @@ function reconstruction_error_prob_folding(reconstructed, seq_dict, all_ctc_maps
 
     #compute how much the new sequence is better/worse
     #if the difference is positive, it means that the reconstructed seq has a better probability of folding
-    total_distance = new_proba_folding - old_proba_folding
+    total_distance = log(new_proba_folding / old_proba_folding)
 
     return total_distance
 
@@ -288,6 +288,8 @@ end
 function plot_reconstruction_error_proba(root_seq, root_to_leaf_distances, tree_depth, n_trees, target_number, all_ctc_maps, reconstruction_method; beta=100)
     means = Float64[]
     stds = Float64[]
+    leaf_means = Float64[]
+    leaf_stds = Float64[]
 
     for d in root_to_leaf_distances
         branch_length = d ÷ tree_depth
@@ -295,6 +297,7 @@ function plot_reconstruction_error_proba(root_seq, root_to_leaf_distances, tree_
         trees = generate_trees(root_seq, branch_length, tree_depth, n_trees, target_number, all_ctc_maps, beta=beta)
 
         errors = Float64[]
+        leaf_probas = Float64[]
         for (newick_str, seq_dict) in trees
             tree = parse_newick_string(newick_str)
 
@@ -307,10 +310,13 @@ function plot_reconstruction_error_proba(root_seq, root_to_leaf_distances, tree_
             end
 
             push!(errors, reconstruction_error_prob_folding(recon, seq_dict, all_ctc_maps, target_number))
+            push!(leaf_probas, compute_average_leaf_log_ratio(tree, seq_dict, all_ctc_maps, target_number))
         end
 
         push!(means, mean(errors))
         push!(stds, std(errors))
+        push!(leaf_means, mean(leaf_probas))
+        push!(leaf_stds, std(leaf_probas))
     end
 
     p = plot(root_to_leaf_distances, means,
@@ -322,6 +328,115 @@ function plot_reconstruction_error_proba(root_seq, root_to_leaf_distances, tree_
         title="$reconstruction_method reconstruction error (folding)\n(mean ± std)",
         label="$reconstruction_method"
     )
+    plot!(p, root_to_leaf_distances, leaf_means,
+        ribbon=leaf_stds,
+        fillalpha=0.15,
+        lw=2,
+        ls=:dash,
+        label="Leaves (avg)"
+    )
     hline!(p, [0.0], ls=:dot, color=:red, label="True root")
     return p
 end
+
+
+function compute_average_leaf_log_ratio(tree, seq_dict, all_ctc_maps, target_number)
+    root_seq = seq_dict[first(sort(collect(keys(seq_dict))))]
+    root_proba = proba_of_seq(root_seq, all_ctc_maps, target_number)
+
+    leaf_probas = Float64[]
+    for node in postorder_traversal(tree)
+        if isleaf(node)
+            seq = seq_dict[label(node)]
+            push!(leaf_probas, proba_of_seq(seq, all_ctc_maps, target_number))
+        end
+    end
+
+    return log(mean(leaf_probas) / root_proba)
+end
+
+
+function plot_reconstruction_comparison_proba(root_seq, root_to_leaf_distances, tree_depth, n_trees, target_number, all_ctc_maps; beta=100)
+
+    fitch_all     = Dict{Int, Vector{Float64}}()
+    consensus_all = Dict{Int, Vector{Float64}}()
+    leaf_all      = Dict{Int, Vector{Float64}}()
+
+    for d in root_to_leaf_distances
+        branch_length = d ÷ tree_depth
+        trees = generate_trees(root_seq, branch_length, tree_depth, n_trees, target_number, all_ctc_maps, beta=beta)
+
+        fitch_errors     = Float64[]
+        consensus_errors = Float64[]
+        leaf_ratios      = Float64[]
+
+        for (newick_str, seq_dict) in trees
+            tree = parse_newick_string(newick_str)
+
+            recon_fitch = fitch_reconstruction(tree, seq_dict)
+            push!(fitch_errors, reconstruction_error_prob_folding(recon_fitch, seq_dict, all_ctc_maps, target_number))
+
+            recon_consensus, _ = consensus_from_leaves_reconstruction(tree, seq_dict, 20; pseudo_count=1.0)
+            push!(consensus_errors, reconstruction_error_prob_folding(recon_consensus, seq_dict, all_ctc_maps, target_number))
+
+            push!(leaf_ratios, compute_average_leaf_log_ratio(tree, seq_dict, all_ctc_maps, target_number))
+        end
+
+        fitch_all[d]     = fitch_errors
+        consensus_all[d] = consensus_errors
+        leaf_all[d]      = leaf_ratios
+    end
+
+    # Une trace par méthode — PlotlyJS gère le groupement automatiquement
+    x_fitch     = Int[]
+    x_consensus = Int[]
+    x_leaf      = Int[]
+    y_fitch     = Float64[]
+    y_consensus = Float64[]
+    y_leaf      = Float64[]
+
+    for d in root_to_leaf_distances
+        append!(x_fitch,     fill(d, length(fitch_all[d])))
+        append!(x_consensus, fill(d, length(consensus_all[d])))
+        append!(x_leaf,      fill(d, length(leaf_all[d])))
+        append!(y_fitch,     fitch_all[d])
+        append!(y_consensus, consensus_all[d])
+        append!(y_leaf,      leaf_all[d])
+    end
+
+    trace_fitch = PlotlyJS.box(
+        x=x_fitch, y=y_fitch,
+        name="Fitch",
+        marker_color="royalblue",
+        boxmean=true  # affiche la moyenne en pointillés en plus de la médiane
+    )
+    trace_consensus = PlotlyJS.box(
+        x=x_consensus, y=y_consensus,
+        name="Consensus",
+        marker_color="darkorange",
+        boxmean=true
+    )
+    trace_leaf = PlotlyJS.box(
+        x=x_leaf, y=y_leaf,
+        name="Leaves",
+        marker_color="seagreen",
+        boxmean=true
+    )
+
+    layout = PlotlyJS.Layout(
+        title="Fitch vs Consensus reconstruction (folding)<br>($n_trees trees, depth $tree_depth)",
+        xaxis=PlotlyJS.attr(title="Root to leaf distance (branch_length × depth)", type="log"),
+        yaxis=PlotlyJS.attr(title="Log-ratio folding probability (vs true root)"),
+        boxmode="group",  # boîtes côte à côte par groupe de x
+        shapes=[PlotlyJS.attr(  # ligne horizontale y=0
+            type="line",
+            x0=minimum(root_to_leaf_distances), x1=maximum(root_to_leaf_distances),
+            y0=0, y1=0,
+            line=PlotlyJS.attr(color="red", dash="dot", width=1.5)
+        )]
+    )
+
+    return PlotlyJS.plot([trace_fitch, trace_consensus, trace_leaf], layout)
+end
+
+
